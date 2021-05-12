@@ -7,6 +7,17 @@ const visualRange = 75;
 
 var boids = [];
 
+function addBoid(){
+  boids.push({
+    x: Math.random() * width,
+    y: Math.random() * height,
+    dx: Math.random() * 10 - 5,
+    dy: Math.random() * 10 - 5,
+    history: [],
+  });
+
+}
+
 function initBoids() {
   for (var i = 0; i < numBoids; i += 1) {
     boids[boids.length] = {
@@ -204,8 +215,19 @@ function animationLoop() {
   // Schedule the next frame
   window.requestAnimationFrame(animationLoop);
 }
+//New stuffs
+
+
+function myFunction() {
+  document.getElementById("demo").innerHTML = "YOU CLICKED ME!";
+}
+//End
+
 
 window.onload = () => {
+
+  document.getElementById("demo").onclick = function() {addBoid()};
+
   // Make sure the canvas always fills the whole window
   window.addEventListener("resize", sizeCanvas, false);
   sizeCanvas();
@@ -215,4 +237,5 @@ window.onload = () => {
 
   // Schedule the main animation loop
   window.requestAnimationFrame(animationLoop);
+
 };
