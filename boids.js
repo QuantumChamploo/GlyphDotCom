@@ -1,24 +1,129 @@
 // Size of canvas. These get updated to fill the whole browser.
 let width = 150;
 let height = 150;
+var count = 0;
 
 const numBoids = 100;
 const visualRange = 75;
 
+
 var boids = [];
 
-function addBoid(){
+var terrain = [];
+
+var active = false;
+var currentX;
+var currentY;
+var initialX;
+var initialY;
+var xOffset = 0;
+var yOffset = 0;
+
+var headerOffset = 190
+
+
+
+function dragStart(e) {
+  if (e.type === "touchstart") {
+    initialX = e.touches[0].clientX - xOffset;
+    initialY = e.touches[0].clientY - yOffset;
+  } else {
+    //addBoid('green');
+    initialX = e.clientX;
+    initialY = e.clientY;
+    addBoid('white');
+  }
+  document.getElementById('output').innerHTML = e.clientX;
+  document.getElementById('output2').innerHTML = e.clientY;
+  for(let rect of terrain){
+    if(e.clientX < rect.x + rect.width && e.clientX  > rect.x && e.clientY < rect.y + rect.height && e.clientY  > rect.y){
+      addBoid('orange');
+    }
+  }
+
+  active = true;
+}
+
+function dragEnd(e) {
+  initialX = currentX;
+  initialY = currentY;
+  addBoid('black');
+  active = false;
+}
+
+function drag(e){
+  // if(e.clientX < rect.x + rect.width && e.clientX  > rect.x && e.clientY < rect.y + rect.height && e.clientY  > rect.y){
+  //   addBoid('white');
+  //   }
+  // //addBoid('green');
+  if (active){
+    e.preventDefault();
+
+    //addBoid('green');
+    if(e.type === "touchmove"){
+      // something soon
+    } else {
+      deltaX = e.clientX - initialX;
+      deltaY = e.clientY - initialY;
+    }
+      //something
+    for(let rect of terrain){
+      addBoid('green');
+      //addBoid('green');
+      if(e.clientX < rect.x + rect.width && e.clientX  > rect.x && e.clientY - headerOffset < rect.y + rect.height && e.clientY - headerOffset  > rect.y){
+        //addBoid('green');
+        rect.x += deltaX;
+        rect.y += deltaY;
+        //document.getElementById('output').innerHTML = e.clientX;
+        addBoid("purple");
+
+    }
+   }
+
+    initialX = e.clientX;
+    initialY = e.clientY;
+    yOffset = currentX;
+    yOffset = currentY;
+  }
+}
+
+
+
+function addRectangle(xPos,yPos,wid,heig,col){
+  terrain.push({
+    x : xPos,
+    y : yPos,
+    width : wid,
+    height : heig,
+    color : col,
+    });
+  
+}
+
+function addBoid(col){
   boids.push({
-    x: Math.random() * width,
-    y: Math.random() * height,
+    x: Math.random() * 10 + 500,
+    y: Math.random() * 10 + 700,
     dx: Math.random() * 10 - 5,
     dy: Math.random() * 10 - 5,
     history: [],
+    color: col,
   });
 
 }
 
-function initBoids() {
+function addBoid2(e){
+  addBoid('red');
+
+}
+
+function boidTeam(num,col){
+  for(var i = 0; i < num; i +=1){
+    addBoid(col);
+  }
+}
+
+function initBoids(color) {
   for (var i = 0; i < numBoids; i += 1) {
     boids[boids.length] = {
       x: Math.random() * width,
@@ -26,9 +131,12 @@ function initBoids() {
       dx: Math.random() * 10 - 5,
       dy: Math.random() * 10 - 5,
       history: [],
+      color: color,
     };
   }
 }
+
+
 
 function distance(boid1, boid2) {
   return Math.sqrt(
@@ -51,10 +159,29 @@ function nClosestBoids(boid, n) {
 // size and width/height variables.
 function sizeCanvas() {
   const canvas = document.getElementById("boids");
+  //document.write(canvas)
   width = window.innerWidth;
   height = window.innerHeight;
   canvas.width = width;
   canvas.height = height;
+}
+
+function collisionDect(boid){
+  for(let rect of terrain){
+    if(boid.x < rect.x + rect.width &&
+   boid.x  > rect.x &&
+   boid.y < rect.y + rect.height &&
+   boid.y  > rect.y){
+      boid.color = 'green';
+      //addBoid('orange');
+      //rect.x += 100;
+      const index = boids.indexOf(boid);
+      if(index > -1){
+        boids.splice(index,1);
+      }
+
+    }
+  }
 }
 
 // Constrain a boid to within the window. If it gets too close to an edge,
@@ -87,10 +214,12 @@ function flyTowardsCenter(boid) {
   let numNeighbors = 0;
 
   for (let otherBoid of boids) {
-    if (distance(boid, otherBoid) < visualRange) {
-      centerX += otherBoid.x;
-      centerY += otherBoid.y;
-      numNeighbors += 1;
+    if(otherBoid.color == boid.color){
+      if (distance(boid, otherBoid) < visualRange) {
+        centerX += otherBoid.x;
+        centerY += otherBoid.y;
+        numNeighbors += 1;
+      }
     }
   }
 
@@ -110,10 +239,12 @@ function avoidOthers(boid) {
   let moveX = 0;
   let moveY = 0;
   for (let otherBoid of boids) {
-    if (otherBoid !== boid) {
-      if (distance(boid, otherBoid) < minDistance) {
-        moveX += boid.x - otherBoid.x;
-        moveY += boid.y - otherBoid.y;
+    if(otherBoid.color == boid.color){
+      if (otherBoid !== boid) {
+        if (distance(boid, otherBoid) < minDistance) {
+          moveX += boid.x - otherBoid.x;
+          moveY += boid.y - otherBoid.y;
+        }
       }
     }
   }
@@ -132,10 +263,12 @@ function matchVelocity(boid) {
   let numNeighbors = 0;
 
   for (let otherBoid of boids) {
-    if (distance(boid, otherBoid) < visualRange) {
-      avgDX += otherBoid.dx;
-      avgDY += otherBoid.dy;
-      numNeighbors += 1;
+    if(otherBoid.color == boid.color){
+      if (distance(boid, otherBoid) < visualRange) {
+        avgDX += otherBoid.dx;
+        avgDY += otherBoid.dy;
+        numNeighbors += 1;
+      }
     }
   }
 
@@ -167,7 +300,8 @@ function drawBoid(ctx, boid) {
   ctx.translate(boid.x, boid.y);
   ctx.rotate(angle);
   ctx.translate(-boid.x, -boid.y);
-  ctx.fillStyle = "#558cf4";
+  //ctx.fillStyle = "#558cf4";
+  ctx.fillStyle = boid.color;
   ctx.beginPath();
   ctx.moveTo(boid.x, boid.y);
   ctx.lineTo(boid.x - 15, boid.y + 5);
@@ -187,8 +321,23 @@ function drawBoid(ctx, boid) {
   }
 }
 
+function drawRectangle(ctx,rect){
+  ctx.beginPath();
+  //ctx.fillStyle('green');
+  //ctx.rect(rect.x, rect.y, rect.width, rect.height);
+  ctx.fillStyle = rect.color;
+  ctx.fillRect(rect.x, rect.y, rect.width, rect.height);
+  //ctx.fillRect(20, 20, 150, 100);
+  //ctx.fill(rect.color)
+  ctx.stroke();
+
+}
+
 // Main animation loop
 function animationLoop() {
+  document.getElementById("clicker").innerHTML = width.toString();
+  //count += 1;
+
   // Update each boid
   for (let boid of boids) {
     // Update the velocities according to each rule
@@ -197,6 +346,7 @@ function animationLoop() {
     matchVelocity(boid);
     limitSpeed(boid);
     keepWithinBounds(boid);
+    collisionDect(boid);
 
     // Update the position based on the current velocity
     boid.x += boid.dx;
@@ -211,6 +361,10 @@ function animationLoop() {
   for (let boid of boids) {
     drawBoid(ctx, boid);
   }
+  for (let rect of terrain){
+    drawRectangle(ctx,rect);
+  }
+
 
   // Schedule the next frame
   window.requestAnimationFrame(animationLoop);
@@ -221,19 +375,41 @@ function animationLoop() {
 function myFunction() {
   document.getElementById("demo").innerHTML = "YOU CLICKED ME!";
 }
+
+function clickerAdd(){
+  count += 1;
+  document.getElementById("clicker").innerHTML = count.toString();
+}
 //End
 
 
 window.onload = () => {
 
-  document.getElementById("demo").onclick = function() {addBoid()};
+  document.getElementById("demo").onclick = function() {addBoid('green')};
+  document.getElementById("dump").onclick = function() {boidTeam(20,'blue')};
+  //document.getElementById("clicker").onclick = function() {clickerAdd()};
+  document.getElementById("clicker").innerHTML = 'test';
+  document.getElementById('output').innerHTML = 'ending';
 
+  //document.addEventListener("mousedown",addBoid2, false);
+
+
+  document.addEventListener("touchstart", dragStart, false);
+  document.addEventListener("touchend", dragEnd, false);
+
+  document.addEventListener("mousedown", dragStart, false);
+  document.addEventListener("mouseup", dragEnd, false);
+  document.addEventListener("mousemove", drag, false);
+
+  //count += 1;
   // Make sure the canvas always fills the whole window
   window.addEventListener("resize", sizeCanvas, false);
   sizeCanvas();
 
   // Randomly distribute the boids to start
-  initBoids();
+  initBoids("red");
+  addRectangle(700,50,150,300,"blue")
+  addRectangle(100,0,150,300,"blue")
 
   // Schedule the main animation loop
   window.requestAnimationFrame(animationLoop);
